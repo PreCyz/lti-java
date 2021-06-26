@@ -1,10 +1,15 @@
 package nn.lti.poc;
 
+import nn.lti.poc.launch.LtiSigner;
+import nn.lti.poc.launch.LtiSigningException;
+import nn.lti.poc.launch.LtiVerifier;
 import nn.lti.poc.launch.*;
 import nn.lti.poc.message.LtiErrorable;
+import org.imsglobal.lti.launch.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.UnsupportedEncodingException;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,9 +48,10 @@ public class UnitTest {
     }
 
     @Test
-    void given_when_thenSign() throws LtiSigningException {
+    void given_when_thenSign() throws LtiSigningException, UnsupportedEncodingException {
         LtiSigner signer = new LtiOauth10aSigner();
         Map<String, String> parameters = new HashMap<>();
+        parameters.put("&", "");
 
         final Map<String, String> resultMap = signer.signParameters(parameters.entrySet(), consumerKey, consumerSecret, launchUrl, "POST");
 
@@ -57,10 +63,12 @@ public class UnitTest {
         assertThat(resultMap.get("oauth_timestamp")).isNotEmpty();
         assertThat(resultMap.get("oauth_version")).isEqualTo("1.0");
 
+        parameters.put("oauth_consumer_key", resultMap.get("oauth_consumer_key"));
         final LtiVerifier ltiVerifier = new LtiOauth10aVerifier();
         final LtiErrorable<Collection<? extends Map.Entry<String, String>>> result = ltiVerifier.verifyParameters(parameters.entrySet(), launchUrl, "POST", consumerSecret);
 
         assertThat(result).isNotNull();
+        result.getErrors().forEach(is -> System.out.printf("msg: %s", is.getMessage()));
 
     }
 
@@ -100,5 +108,20 @@ public class UnitTest {
         );
 
         assertThat(result).isNotNull();
+    }
+
+    @Test
+    void given_when2_then() throws org.imsglobal.lti.launch.LtiSigningException, LtiVerificationException {
+        org.imsglobal.lti.launch.LtiVerifier ltiVerifier = new LtiOauthVerifier();
+        Map<String, String> parameters = new HashMap<>();
+
+        Map<String, String> signedParameters = new LtiOauthSigner()
+                .signParameters(parameters, consumerKey, consumerSecret, launchUrl, "POST");
+
+        assertThat(signedParameters).isNotEmpty();
+        LtiVerificationResult ltiResult = ltiVerifier.verifyParameters(signedParameters, launchUrl, "POST", consumerSecret);
+        assertThat(ltiResult.getSuccess()).isTrue();
+        assertThat(ltiResult.getMessage()).isNull();
+        assertThat(ltiResult.getError()).isNull();
     }
 }

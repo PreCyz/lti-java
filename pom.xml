@@ -151,6 +151,12 @@
             <version>3.12.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.imsglobal</groupId>
+            <artifactId>basiclti-util</artifactId>
+            <version>1.1.2</version>
+        </dependency>
+
         <!--Unit tests-->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
